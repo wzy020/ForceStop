@@ -53,10 +53,11 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
     val apps by viewModel.apps.collectAsStateWithLifecycle()
     val isLoading by viewModel.loading.collectAsStateWithLifecycle()
     val autoRefresh by viewModel.autoRefresh.collectAsStateWithLifecycle()
+    val selected by viewModel.selectedPackages.collectAsStateWithLifecycle()
 
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
-        onRefresh = { viewModel.loadRunningApps() }
+        onRefresh = { viewModel.onPullDown() }
     )
 
     Scaffold(
@@ -134,8 +135,9 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
                             onClick = {
                                 viewModel.openAppSettings(app.packageName)
                             },
-                            onRightClick = {
-                                viewModel.forceStopApp(app.packageName)
+                            selected = selected.contains(app.packageName),
+                            onToggleSelect = {
+                                viewModel.toggleSelected(app.packageName)
                             }
                         )
                         Divider()
@@ -154,7 +156,12 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
 }
 
 @Composable
-fun AppItem(appInfo: AppInfo, onClick: () -> Unit, onRightClick: () -> Unit) {
+fun AppItem(
+    appInfo: AppInfo,
+    onClick: () -> Unit,
+    selected: Boolean,
+    onToggleSelect: () -> Unit
+) {
     val itemHeight = 72.dp
     Row(
         modifier = Modifier
@@ -190,23 +197,25 @@ fun AppItem(appInfo: AppInfo, onClick: () -> Unit, onRightClick: () -> Unit) {
                 .width(itemHeight)
                 .fillMaxHeight()
                 .background(Color(0xFF5C1A1A))
-                .clickable(onClick = onRightClick),
+                .clickable(onClick = onToggleSelect),
             contentAlignment = Alignment.Center
         ) {
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .rotate(45f),
-                thickness = 2.dp,
-                color = Color.White
-            )
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .rotate(-45f),
-                thickness = 2.dp,
-                color = Color.White
-            )
+            if (selected) {
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .rotate(45f),
+                    thickness = 2.dp,
+                    color = Color.White
+                )
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .rotate(-45f),
+                    thickness = 2.dp,
+                    color = Color.White
+                )
+            }
         }
     }
 }

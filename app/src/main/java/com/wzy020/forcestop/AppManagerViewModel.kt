@@ -9,6 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.graphics.drawable.Drawable
@@ -30,6 +31,9 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
     private val _autoRefresh = MutableStateFlow(false)
     val autoRefresh = _autoRefresh.asStateFlow()
 
+    private val _selectedPackages = MutableStateFlow<Set<String>>(emptySet())
+    val selectedPackages = _selectedPackages.asStateFlow()
+
     init {
         loadAutoRefresh()
         // 如果没有开启自动刷新，则在启动时主动加载一次，避免与 onResume 的自动刷新重复
@@ -39,11 +43,7 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun onResume() {
-        refreshIfAuto()
-    }
-
     // 仅在开启自动刷新时重新加载运行中的应用
-    private fun refreshIfAuto() {
         if (_autoRefresh.value) {
             loadRunningApps()
         }
@@ -114,19 +114,36 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
         this.jumpToAppSettings(packageName)
     }
 
-    // 通过 root 权限 force-stop 指定应用，成功后刷新列表
-    fun forceStopApp(packageName: String) {
+    // 切换某个应用在选中集合中的状态
+    fun toggleSelected(packageName: String) {
+        val set = _selectedPackages.value.toMutableSet()
+        if (set.contains(packageName)) set.remove(packageName) else set.add(packageName)
+        _selectedPackages.value = set
+    }
+
+    // 清空选中集合
+    fun clearSelected() {
+        _selectedPackages.value = emptySet()
+    }
+
+    // 批量 force-stop 选中的应用，完成后清空选中并刷新列表（单次 su 调用串联命令）
+    fun onPullDown() {
+        val tobeKilledPackages = _selectedPackages.value.toList()
         viewModelScope.launch(Dispatchers.IO) {
+            _loading.value = true
             try {
-                val command = "am force-stop $packageName"
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
-                val exitCode = process.waitFor()
-                process.destroy()
-                if (exitCode == 0) {
-                    refreshIfAuto()
+                if (tobeKilledPackages.isNotEmpty()) {
+                    val command = tobeKilledPackages.joinToString("; ") { "am force-stop $it" }
+                    val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+                    process.waitFor()
+                    process.destroy()
                 }
+                withContext(Dispatchers.Main) { clearSelected() }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                // 无论是否选中，都重新加载运行中的应用列表
+                loadRunningApps()
             }
         }
     }
