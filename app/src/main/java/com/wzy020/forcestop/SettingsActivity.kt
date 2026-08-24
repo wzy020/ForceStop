@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
-import coil.compose.AsyncImage
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.Color
 
 class SettingsActivity : ComponentActivity() {
@@ -111,8 +111,8 @@ fun AppSelectionItem(
             onCheckedChange = { onSelectionChange() }
         )
         Spacer(modifier = Modifier.width(16.dp))
-        AsyncImage(
-            model = appInfo.icon,
+        Image(
+            painter = rememberDrawablePainter(appInfo.icon),
             contentDescription = "${appInfo.name} icon",
             modifier = Modifier
                 .size(48.dp)
