@@ -29,7 +29,10 @@ class SettingsActivity : ComponentActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // 进入设置页时清理已卸载应用的本地记录
+        viewModel.cleanupUninstalledPackages()
+
         setContent {
             SettingsScreen(viewModel)
         }

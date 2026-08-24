@@ -69,4 +69,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         this.jumpToAppSettings(packageName)
     }
 
+    // 清理已卸载应用的本地记录，仅进入设置页时调用
+    fun cleanupUninstalledPackages() {
+        val context = getApplication<Application>()
+        val pm = context.packageManager
+        val remaining = _selectedPackages.value.filter { pkg ->
+            try {
+                pm.getApplicationInfo(pkg, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
+            }
+        }.toSet()
+
+        if (remaining != _selectedPackages.value) {
+            _selectedPackages.value = remaining
+            val prefs = context.getSharedPreferences("app_selection", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("selected_packages", remaining).apply()
+        }
+    }
+
 }
