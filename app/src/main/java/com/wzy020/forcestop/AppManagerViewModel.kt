@@ -39,6 +39,11 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun onResume() {
+        refreshIfAuto()
+    }
+
+    // 仅在开启自动刷新时重新加载运行中的应用
+    private fun refreshIfAuto() {
         if (_autoRefresh.value) {
             loadRunningApps()
         }
@@ -107,6 +112,23 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
     // 跳转到应用详情页
     fun openAppSettings(packageName: String) {
         this.jumpToAppSettings(packageName)
+    }
+
+    // 通过 root 权限 force-stop 指定应用，成功后刷新列表
+    fun forceStopApp(packageName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val command = "am force-stop $packageName"
+                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+                val exitCode = process.waitFor()
+                process.destroy()
+                if (exitCode == 0) {
+                    refreshIfAuto()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     // 跳转到开发者选项

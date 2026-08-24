@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,9 +129,15 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
                 ) {
                     items(apps, key = { it.packageName }) { app ->
                         Divider()
-                        AppItem(appInfo = app, onClick = {
-                            viewModel.openAppSettings(app.packageName)
-                        })
+                        AppItem(
+                            appInfo = app,
+                            onClick = {
+                                viewModel.openAppSettings(app.packageName)
+                            },
+                            onRightClick = {
+                                viewModel.forceStopApp(app.packageName)
+                            }
+                        )
                         Divider()
                     }
                 }
@@ -147,13 +154,14 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
 }
 
 @Composable
-fun AppItem(appInfo: AppInfo, onClick: () -> Unit) {
+fun AppItem(appInfo: AppInfo, onClick: () -> Unit, onRightClick: () -> Unit) {
+    val itemHeight = 72.dp
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(itemHeight)
             .clickable(onClick = onClick)
-            .background(Color(0xFF1E1E1E))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(Color(0xFF1E1E1E)),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -175,6 +183,29 @@ fun AppItem(appInfo: AppInfo, onClick: () -> Unit) {
                 text = appInfo.packageName,
                 fontSize = 12.sp,
                 color = Color(0xFFB0B0B0)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .width(itemHeight)
+                .fillMaxHeight()
+                .background(Color(0xFF5C1A1A))
+                .clickable(onClick = onRightClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .rotate(45f),
+                thickness = 2.dp,
+                color = Color.White
+            )
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .rotate(-45f),
+                thickness = 2.dp,
+                color = Color.White
             )
         }
     }
