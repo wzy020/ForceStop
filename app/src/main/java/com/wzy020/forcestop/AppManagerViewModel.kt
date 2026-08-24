@@ -148,20 +148,31 @@ class AppManagerViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // 跳转到开发者选项
-    fun openDeveloperOptions() {
+    // 点击标题：通过 root 的 am start 直达“运行的服务”页（SubSettings 未导出，需 root 绕过）
+    // ColorOS 的运行服务 fragment 为 OplusRunningServices；
+    // AOSP 原生系统对应为 com.android.settings.applications.ProcessStatsSummary
+    fun openRunningServicesPage() {
         val context = getApplication<Application>()
-        val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        val command = "am start -n com.android.settings/.SubSettings " +
+                "--es ':settings:show_fragment' " +
+                "'com.oplus.settings.feature.othersettings.development.OplusRunningServices'"
         try {
-            context.startActivity(intent)
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+            process.waitFor()
+            process.destroy()
         } catch (e: Exception) {
-            // 如果ACTION_APPLICATION_DEVELOPMENT_SETTINGS不可用，尝试使用通用的开发者选项
-            val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            // root 方式失败，回退到公开的开发者选项总页
+            try {
+                val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(devIntent)
+            } catch (e2: Exception) {
+                val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(fallbackIntent)
             }
-            context.startActivity(fallbackIntent)
         }
     }
 

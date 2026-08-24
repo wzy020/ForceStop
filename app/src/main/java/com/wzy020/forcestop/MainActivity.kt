@@ -67,7 +67,7 @@ fun AppManagerScreen(viewModel: AppManagerViewModel) {
                 title = {
                     Text(
                         text = "ForceStop",
-                        modifier = Modifier.clickable { viewModel.openDeveloperOptions() },
+                        modifier = Modifier.clickable { viewModel.openRunningServicesPage() },
                         color = Color.White
                     )
                 },
